@@ -20,7 +20,7 @@ struct Serializer {
     }
     json["gain"] = gainSettings.getSelectedGain().name;
     // TODO: It would be ideal to generate the name from the timestamp
-    json["name"] = "";
+    // json["name"] = "";
 
     String result;
     serializeJson(json, result);

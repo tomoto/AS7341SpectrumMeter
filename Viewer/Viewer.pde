@@ -101,16 +101,20 @@ void setup() {
   
   portDropdown = cp5.addScrollableList("portDropdown")
    .setPosition(390, 10)
-   .addItem("<NO PORT>", null);
-  for (String portName : Serial.list()) {
-    portDropdown.addItem(portName, portName);
-  }
+   .close();
   portDropdown.getCaptionLabel().set("Serial port to read");
-  portDropdown.close();
+  populatePorts();
   
   indexLabel = cp5.addLabel("indexLabel")
    .setPosition(10, 10)
    .setText("0/0");
+}
+
+void populatePorts() {
+  portDropdown.clear().addItem("<NO PORT>", null);
+  for (String portName : Serial.list()) {
+    portDropdown.addItem(portName, portName);
+  }
 }
 
 void drawChart() {
@@ -186,7 +190,9 @@ void readData() {
         // parse the json
         JSONObject record = JSONObject.parse(line);
         // supply the name based on the timestamp and the index in the batch
-        record.setString("name", String.format("%s #%d", new Date().toString(), ++indexInBatch));
+        String id = String.format("%s #%d", new Date().toString(), ++indexInBatch);
+        record.setString("id", id);
+        record.setString("name", id);
         // add the new data
         json.append(record);
         
@@ -214,13 +220,24 @@ void draw() {
 }
 
 void keyPressed() {
-  // right/left arrow to switch the data to display
   if (key == CODED) {
+    // right/left arrow to switch the data to display
     if (keyCode == RIGHT) {
       displayedIndex = (displayedIndex + 1) % json.size();
     } else if (keyCode == LEFT) {
       displayedIndex = (displayedIndex + json.size() - 1) % json.size();
     }
+  } else if (key == 'p') {
+    // reload port list
+    closePort();
+    populatePorts();
+  }
+}
+
+void closePort() {
+  if (port != null) {
+    port.stop();
+    port = null;
   }
 }
 
@@ -228,10 +245,7 @@ public void controlEvent(ControlEvent theEvent) {
   // port selection
   if (theEvent.getController() == portDropdown) {
     String portName = (String)portDropdown.getItem((int)theEvent.getValue()).get("value");
-    if (port != null) {
-      port.stop();
-      port = null;
-    }
+    closePort();
     if (portName != null) {
       try {
         port = new Serial(this, portName, 115200);
